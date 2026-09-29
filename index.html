@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart College Task Manager</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif}
+body{background:#f4f7fb;color:#172033}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer;border:0}
+.app{display:flex;min-height:100vh}
+.sidebar{width:245px;background:#172554;color:white;padding:24px 16px;position:fixed;inset:0 auto 0 0}
+.logo{font-size:20px;font-weight:700;margin:0 10px 30px}
+.logo span{display:block;color:#93c5fd;font-size:12px;margin-top:5px}
+.nav button{display:block;width:100%;padding:13px 14px;margin:5px 0;background:transparent;color:#dbeafe;text-align:left;border-radius:10px}
+.nav button:hover,.nav button.active{background:#2563eb;color:#fff}
+.main{margin-left:245px;width:calc(100% - 245px);padding:28px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}
+.top h1{font-size:28px}.top p{color:#64748b;margin-top:5px}
+.user{background:white;border-radius:12px;padding:10px 15px;box-shadow:0 3px 12px #0000000d}
+.page{display:none}.page.active{display:block}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:15px;margin-bottom:22px}
+.card{background:white;border-radius:14px;padding:19px;box-shadow:0 3px 14px #0000000a}
+.card small{color:#64748b}.number{font-size:28px;font-weight:700;margin-top:8px}
+.grid{display:grid;grid-template-columns:2fr 1fr;gap:20px}
+.panel{background:white;border-radius:14px;padding:20px;box-shadow:0 3px 14px #0000000a;margin-bottom:20px}
+.panel h2{font-size:18px;margin-bottom:15px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:13px 8px;text-align:left;border-bottom:1px solid #e5e7eb;font-size:14px}
+th{color:#64748b;font-size:12px;text-transform:uppercase}
+.badge{padding:5px 9px;border-radius:20px;font-size:12px;display:inline-block}
+.pending{background:#fef3c7;color:#92400e}.progress{background:#dbeafe;color:#1d4ed8}.completed{background:#dcfce7;color:#166534}.overdue{background:#fee2e2;color:#991b1b}
+.primary{background:#2563eb;color:white;padding:10px 15px;border-radius:9px}
+.secondary{background:#e2e8f0;color:#172033;padding:8px 12px;border-radius:8px}
+.danger{background:#fee2e2;color:#991b1b;padding:8px 12px;border-radius:8px}
+.actions{display:flex;gap:7px}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}
+.filters input,.filters select,.form input,.form select,.form textarea{border:1px solid #d8dee9;border-radius:8px;padding:10px;background:#fff}
+.filters input{flex:1;min-width:180px}
+.form{display:grid;gap:14px}.form label{font-size:13px;font-weight:600;color:#475569}.form textarea{min-height:100px;resize:vertical}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.progressbar{height:10px;background:#e2e8f0;border-radius:20px;overflow:hidden;margin-top:8px}
+.progressfill{height:100%;background:#2563eb;border-radius:20px}
+.notice{padding:12px;border-radius:9px;background:#eff6ff;margin-bottom:10px;font-size:14px}
+.empty{text-align:center;padding:35px;color:#64748b}
+.modal{display:none;position:fixed;inset:0;background:#0008;align-items:center;justify-content:center;padding:20px}
+.modal.show{display:flex}.modal-box{background:white;width:min(600px,100%);max-height:90vh;overflow:auto;border-radius:15px;padding:24px}
+.modal-head{display:flex;justify-content:space-between;margin-bottom:18px}
+.close{background:#e2e8f0;border-radius:50%;width:32px;height:32px}
+.toast{position:fixed;right:25px;bottom:25px;background:#172033;color:white;padding:13px 18px;border-radius:10px;display:none}
+.toast.show{display:block}
+.login{position:fixed;inset:0;background:#eef4ff;display:flex;align-items:center;justify-content:center;z-index:20}
+.login-box{background:white;width:min(420px,92%);padding:35px;border-radius:18px;box-shadow:0 15px 50px #0002}
+.login-box h1{color:#172554;margin-bottom:5px}.login-box p{color:#64748b;margin-bottom:25px}.login-box .form{margin-top:15px}
+.role{display:flex;gap:10px}.role button{flex:1;padding:10px;border-radius:8px;background:#e2e8f0}.role button.selected{background:#2563eb;color:white}
+@media(max-width:900px){.sidebar{width:70px;padding:20px 8px}.logo{font-size:0;text-align:center}.logo:first-letter{font-size:22px}.logo span,.nav button span{display:none}.nav button{text-align:center}.main{margin-left:70px;width:calc(100% - 70px);padding:18px}.cards{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
+@media(max-width:600px){.top{align-items:flex-start;gap:10px}.top h1{font-size:22px}.user{font-size:12px}.cards{grid-template-columns:1fr 1fr}.form-row{grid-template-columns:1fr}table{min-width:650px}.panel.table-wrap{overflow:auto}}
+</style>
+</head>
+<body>
+
+<div class="login" id="loginScreen">
+  <div class="login-box">
+    <h1>EduFlow AI</h1>
+    <p>Smart College Task Manager</p>
+    <div class="form">
+      <input id="loginEmail" type="email" placeholder="Email" value="student@college.edu">
+      <input id="loginPassword" type="password" placeholder="Password" value="123456">
+      <div class="role">
+        <button id="studentRole" class="selected" onclick="selectRole('Student')">Student</button>
+        <button id="teacherRole" onclick="selectRole('Teacher')">Teacher</button>
+      </div>
+      <button class="primary" onclick="login()">Login to Prototype</button>
+    </div>
+    <p style="font-size:12px;margin-top:18px">Prototype login — any email/password will work.</p>
+  </div>
+</div>
+
+<div class="app">
+<aside class="sidebar">
+  <div class="logo">EduFlow AI<span>Smart College Task Manager</span></div>
+  <div class="nav">
+    <button class="active" onclick="showPage('dashboard',this)">🏠 <span>Dashboard</span></button>
+    <button onclick="showPage('tasks',this)">📋 <span>My Tasks</span></button>
+    <button onclick="showPage('progressPage',this)">📈 <span>Progress</span></button>
+    <button onclick="showPage('notifications',this)">🔔 <span>Notifications</span></button>
+    <button onclick="showPage('profile',this)">👤 <span>Profile</span></button>
+    <button id="teacherNav" style="display:none" onclick="showPage('teacher',this)">👨‍🏫 <span>Teacher Panel</span></button>
+    <button onclick="logout()">↪️ <span>Logout</span></button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="top">
+    <div><h1 id="pageTitle">Dashboard</h1><p id="pageSub">Welcome to your academic task manager.</p></div>
+    <div class="user">👤 <b id="currentUser">Student</b></div>
+  </div>
+
+  <section id="dashboard" class="page active">
+    <div class="cards">
+      <div class="card"><small>Total Tasks</small><div class="number" id="totalCount">0</div></div>
+      <div class="card"><small>Pending</small><div class="number" id="pendingCount">0</div></div>
+      <div class="card"><small>In Progress</small><div class="number" id="progressCount">0</div></div>
+      <div class="card"><small>Completed</small><div class="number" id="completedCount">0</div></div>
+      <div class="card"><small>Overdue</small><div class="number" id="overdueCount">0</div></div>
+    </div>
+    <div class="grid">
+      <div class="panel table-wrap"><h2>Upcoming Tasks</h2><div id="upcoming"></div></div>
+      <div class="panel"><h2>Overall Progress</h2><div style="font-size:36px;font-weight:700" id="overallProgress">0%</div><div class="progressbar"><div class="progressfill" id="overallFill"></div></div><p style="color:#64748b;margin-top:10px">Task completion rate</p></div>
+    </div>
+  </section>
+
+  <section id="tasks" class="page">
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:15px"><h2 style="margin:0">Academic Tasks</h2><button class="primary" onclick="openTaskModal()">+ Add Task</button></div>
+      <div class="filters">
+        <input id="search" placeholder="Search task..." oninput="renderTasks()">
+        <select id="subjectFilter" onchange="renderTasks()"><option value="">All Subjects</option></select>
+        <select id="statusFilter" onchange="renderTasks()"><option value="">All Status</option><option>Pending</option><option>In Progress</option><option>Completed</option></select>
+        <select id="priorityFilter" onchange="renderTasks()"><option value="">All Priorities</option><option>High</option><option>Medium</option><option>Low</option></select>
+      </div>
+      <div class="table-wrap" style="overflow:auto"><table><thead><tr><th>Task</th><th>Subject</th><th>Priority</th><th>Deadline</th><th>Status</th><th>Actions</th></tr></thead><tbody id="taskTable"></tbody></table></div>
+    </div>
+  </section>
+
+  <section id="progressPage" class="page">
+    <div class="panel"><h2>Progress Tracking</h2><div id="progressList"></div></div>
+  </section>
+
+  <section id="notifications" class="page">
+    <div class="panel"><h2>Notifications & Reminders</h2><div id="notificationList"></div></div>
+  </section>
+
+  <section id="profile" class="page">
+    <div class="panel">
+      <h2>Profile & Settings</h2>
+      <div class="form">
+        <div class="form-row"><div><label>Name</label><input value="Bhagesh Rankhamb"></div><div><label>Role</label><input id="profileRole" value="Student" disabled></div></div>
+        <div class="form-row"><div><label>Email</label><input value="student@college.edu"></div><div><label>Department</label><input value="Chemical Engineering"></div></div>
+        <button class="primary" style="width:max-content" onclick="toast('Profile saved successfully')">Save Changes</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="teacher" class="page">
+    <div class="panel"><h2>Teacher Task Management</h2><p style="color:#64748b;margin-bottom:15px">Create, edit, delete and monitor academic tasks.</p>
+      <button class="primary" onclick="openTaskModal()">+ Create New Task</button>
+      <div style="margin-top:20px;overflow:auto"><table><thead><tr><th>Task</th><th>Assigned To</th><th>Deadline</th><th>Status</th><th>Actions</th></tr></thead><tbody id="teacherTable"></tbody></table></div>
+    </div>
+  </section>
+</main>
+</div>
+
+<div class="modal" id="taskModal">
+  <div class="modal-box">
+    <div class="modal-head"><h2 id="modalTitle">Add Task</h2><button class="close" onclick="closeTaskModal()">×</button></div>
+    <form class="form" onsubmit="saveTask(event)">
+      <input type="hidden" id="taskId">
+      <label>Task Title<input id="taskTitle" required placeholder="e.g. Process Calculation Assignment"></label>
+      <div class="form-row">
+        <label>Subject<input id="taskSubject" required placeholder="e.g. Chemical Engineering"></label>
+        <label>Priority<select id="taskPriority"><option>High</option><option selected>Medium</option><option>Low</option></select></label>
+      </div>
+      <div class="form-row">
+        <label>Deadline<input id="taskDeadline" type="date" required></label>
+        <label>Status<select id="taskStatus"><option>Pending</option><option>In Progress</option><option>Completed</option></select></label>
+      </div>
+      <label>Description<textarea id="taskDescription" placeholder="Task instructions..."></textarea></label>
+      <label>Assigned To<input id="taskAssigned" value="Bhagesh Rankhamb" placeholder="Student or class"></label>
+      <button class="primary" type="submit">Save Task</button>
+    </form>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let role='Student';
+let tasks=JSON.parse(localStorage.getItem('eduFlowTasks')) || [
+ {id:1,title:'Chemical Process Calculation Assignment',subject:'Chemical Engineering',priority:'High',deadline:'2026-09-12',status:'In Progress',description:'Complete material balance calculations.',assigned:'Bhagesh Rankhamb'},
+ {id:2,title:'UML Diagram Submission',subject:'Prototyping',priority:'High',deadline:'2026-09-10',status:'Pending',description:'Submit Use Case, Sequence and Activity diagrams.',assigned:'Batch B'},
+ {id:3,title:'Engineering Mathematics Practice',subject:'Mathematics',priority:'Medium',deadline:'2026-09-18',status:'Completed',description:'Complete assigned practice problems.',assigned:'Bhagesh Rankhamb'},
+ {id:4,title:'SRS Document Review',subject:'Prototyping',priority:'Medium',deadline:'2026-09-08',status:'Pending',description:'Review project SRS and requirements.',assigned:'Batch B'}
+];
+function saveData(){localStorage.setItem('eduFlowTasks',JSON.stringify(tasks))}
+function selectRole(r){role=r;document.querySelectorAll('.role button').forEach(b=>b.classList.remove('selected'));document.getElementById(r.toLowerCase()+'Role').classList.add('selected')}
+function login(){document.getElementById('loginScreen').style.display='none';document.getElementById('currentUser').textContent=role;document.getElementById('profileRole').value=role;document.getElementById('teacherNav').style.display=role==='Teacher'?'block':'none';renderAll();toast('Welcome to EduFlow AI')}
+function logout(){document.getElementById('loginScreen').style.display='flex'}
+function showPage(id,btn){
+ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');
+ document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
+ const names={dashboard:['Dashboard','Welcome to your academic task manager.'],tasks:['My Tasks','View, filter and manage your academic tasks.'],progressPage:['Progress Tracking','Monitor your completion progress.'],notifications:['Notifications','Upcoming deadlines and reminders.'],profile:['Profile & Settings','Manage your profile.'],teacher:['Teacher Panel','Manage and monitor assigned tasks.']};
+ document.getElementById('pageTitle').textContent=names[id][0];document.getElementById('pageSub').textContent=names[id][1];renderAll()
+}
+function statusClass(s){return s==='Completed'?'completed':s==='In Progress'?'progress':'pending'}
+function isOverdue(t){return t.status!=='Completed' && new Date(t.deadline+'T23:59:59')<new Date()}
+function renderDashboard(){
+ let total=tasks.length, pending=tasks.filter(t=>t.status==='Pending').length, prog=tasks.filter(t=>t.status==='In Progress').length, comp=tasks.filter(t=>t.status==='Completed').length, over=tasks.filter(isOverdue).length;
+ [['totalCount',total],['pendingCount',pending],['progressCount',prog],['completedCount',comp],['overdueCount',over]].forEach(x=>document.getElementById(x[0]).textContent=x[1]);
+ let rate=total?Math.round(comp/total*100):0;document.getElementById('overallProgress').textContent=rate+'%';document.getElementById('overallFill').style.width=rate+'%';
+ let up=tasks.filter(t=>t.status!=='Completed').sort((a,b)=>a.deadline.localeCompare(b.deadline)).slice(0,6);
+ document.getElementById('upcoming').innerHTML=up.length?'<table><thead><tr><th>Task</th><th>Deadline</th><th>Status</th></tr></thead><tbody>'+up.map(t=>`<tr><td>${esc(t.title)}</td><td>${formatDate(t.deadline)}</td><td><span class="badge ${statusClass(t.status)}">${t.status}</span></td></tr>`).join('')+'</tbody></table>':'<div class="empty">No pending tasks 🎉</div>'
+}
+function renderTasks(){
+ let subjects=[...new Set(tasks.map(t=>t.subject))];let sf=document.getElementById('subjectFilter'),old=sf.value;sf.innerHTML='<option value="">All Subjects</option>'+subjects.map(s=>`<option>${esc(s)}</option>`).join('');sf.value=subjects.includes(old)?old:'';
+ let q=document.getElementById('search').value.toLowerCase(), st=document.getElementById('statusFilter').value, pr=document.getElementById('priorityFilter').value;
+ let arr=tasks.filter(t=>(!q||(t.title+' '+t.subject+' '+t.description).toLowerCase().includes(q))&&(!st||t.status===st)&&(!pr||t.priority===pr)&&(!sf.value||t.subject===sf.value));
+ document.getElementById('taskTable').innerHTML=arr.length?arr.map(taskRow).join(''):'<tr><td colspan="6" class="empty">No tasks found.</td></tr>'
+}
+function taskRow(t){let actual=isOverdue(t)?'<span class="badge overdue">Overdue</span>':`<span class="badge ${statusClass(t.status)}">${t.status}</span>`;return `<tr><td><b>${esc(t.title)}</b><br><small style="color:#64748b">${esc(t.description||'')}</small></td><td>${esc(t.subject)}</td><td>${esc(t.priority)}</td><td>${formatDate(t.deadline)}</td><td>${actual}</td><td><div class="actions"><button class="secondary" onclick="editTask(${t.id})">Edit</button><button class="danger" onclick="deleteTask(${t.id})">Delete</button></div></td></tr>`}
+function renderProgress(){let total=tasks.length;document.getElementById('progressList').innerHTML=tasks.map(t=>{let p=t.status==='Completed'?100:t.status==='In Progress'?50:0;return `<div style="margin-bottom:22px"><div style="display:flex;justify-content:space-between"><b>${esc(t.title)}</b><span>${p}%</span></div><div class="progressbar"><div class="progressfill" style="width:${p}%"></div></div><small style="color:#64748b">${esc(t.subject)} • ${t.status}</small></div>`}).join('')||'<div class="empty">No tasks available.</div>'}
+function renderNotifications(){let n=tasks.filter(t=>t.status!=='Completed').sort((a,b)=>a.deadline.localeCompare(b.deadline));document.getElementById('notificationList').innerHTML=n.length?n.map(t=>`<div class="notice">🔔 <b>${esc(t.title)}</b><br>Deadline: ${formatDate(t.deadline)} — ${isOverdue(t)?'<b style="color:#991b1b">Overdue</b>':'Reminder: upcoming task'}</div>`).join(''):'<div class="empty">You have no pending reminders.</div>'}
+function renderTeacher(){document.getElementById('teacherTable').innerHTML=tasks.map(t=>`<tr><td>${esc(t.title)}</td><td>${esc(t.assigned||'Student')}</td><td>${formatDate(t.deadline)}</td><td><span class="badge ${statusClass(t.status)}">${t.status}</span></td><td><div class="actions"><button class="secondary" onclick="editTask(${t.id})">Edit</button><button class="danger" onclick="deleteTask(${t.id})">Delete</button></div></td></tr>`).join('')}
+function renderAll(){renderDashboard();renderTasks();renderProgress();renderNotifications();renderTeacher()}
+function openTaskModal(){document.getElementById('modalTitle').textContent='Add Task';document.getElementById('taskId').value='';document.getElementById('taskTitle').value='';document.getElementById('taskSubject').value='';document.getElementById('taskPriority').value='Medium';document.getElementById('taskDeadline').value='';document.getElementById('taskStatus').value='Pending';document.getElementById('taskDescription').value='';document.getElementById('taskAssigned').value='Bhagesh Rankhamb';document.getElementById('taskModal').classList.add('show')}
+function closeTaskModal(){document.getElementById('taskModal').classList.remove('show')}
+function editTask(id){let t=tasks.find(x=>x.id===id);if(!t)return;document.getElementById('modalTitle').textContent='Edit Task';document.getElementById('taskId').value=t.id;document.getElementById('taskTitle').value=t.title;document.getElementById('taskSubject').value=t.subject;document.getElementById('taskPriority').value=t.priority;document.getElementById('taskDeadline').value=t.deadline;document.getElementById('taskStatus').value=t.status;document.getElementById('taskDescription').value=t.description||'';document.getElementById('taskAssigned').value=t.assigned||'';document.getElementById('taskModal').classList.add('show')}
+function saveTask(e){e.preventDefault();let id=Number(document.getElementById('taskId').value);let data={title:taskTitle.value,subject:taskSubject.value,priority:taskPriority.value,deadline:taskDeadline.value,status:taskStatus.value,description:taskDescription.value,assigned:taskAssigned.value};if(id){let i=tasks.findIndex(t=>t.id===id);tasks[i]={...tasks[i],...data}}else{data.id=Date.now();tasks.push(data)}saveData();closeTaskModal();renderAll();toast('Task saved successfully')}
+function deleteTask(id){if(confirm('Delete this task?')){tasks=tasks.filter(t=>t.id!==id);saveData();renderAll();toast('Task deleted')}}
+function formatDate(d){return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}
+function esc(s){return Str
